@@ -26,7 +26,7 @@ const safetySettingszzz = [
         threshold: HarmBlockThreshold.BLOCK_NONE,
     },
 ];
-const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro", generationConfig: generationConfigzzz, safetySettings: safetySettingszzz});
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: generationConfigzzz, safetySettings: safetySettingszzz});
 
 
 async function ask(promptOne) {
