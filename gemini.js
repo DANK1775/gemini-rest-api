@@ -1,6 +1,4 @@
 require('dotenv').config()
-const {openDB, closeDB} = require('./db')
-let client;
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold} = require('@google/generative-ai')
 const genAI = new GoogleGenerativeAI(process.env.GEMINIKEY)
 const generationConfigzzz = {
@@ -38,12 +36,6 @@ async function ask(promptOne) {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let text = response.text();
-
-        client = await openDB()
-        const db = client.db()
-        const collection = db.collection('prompts')
-        const saveData = await collection.insertOne(internal)
-        await closeDB(client)
         return text
     } catch (error) {
         console.log(error)
