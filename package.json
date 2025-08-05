@@ -1,18 +1,33 @@
 {
   "name": "gemini-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "API REST para Gemini AI con contexto persistente y seguridad mejorada",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node src/scripts/init.js && node index.js",
+    "dev": "node src/scripts/init.js && nodemon index.js",
+    "init": "node src/scripts/init.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["gemini", "ai", "api", "rest", "context"],
+  "author": "DANK1775",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.10.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "json-store": "^1.0.0",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "express-validator": "^7.0.1",
+    "express-async-handler": "^1.2.0",
+    "express-rate-limit": "^7.1.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
