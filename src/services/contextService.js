@@ -1,27 +1,75 @@
-const JsonStore = require('json-store');
-const path = require('path');
+const Session = require('../models/Session');
 const config = require('../config/config');
+const database = require('../config/database');
 
 class ContextService {
   constructor() {
-    const contextPath = path.resolve(config.context.filePath);
-    this.store = JsonStore(contextPath);
     this.maxMessages = config.context.maxMessages;
-    
-    // Inicializar el store si no existe
-    if (!this.store.get('sessions')) {
-      this.store.set('sessions', {});
+    this.sessionsEnabled = config.context.enableSessions;
+  }
+
+  /**
+   * Verificar si las sesiones están habilitadas
+   * @returns {boolean}
+   */
+  areSessionsEnabled() {
+    return this.sessionsEnabled;
+  }
+
+  /**
+   * Obtener o crear una sesión
+   * @param {string} sessionId - ID de la sesión
+   * @returns {Promise<Object>} Sesión de MongoDB
+   */
+  async getOrCreateSession(sessionId) {
+    if (!this.sessionsEnabled) {
+      return null;
+    }
+
+    if (!database.isConnected) {
+      throw new Error('Base de datos no conectada');
+    }
+
+    try {
+      let session = await Session.findOne({ sessionId });
+      
+      if (!session) {
+        session = new Session({
+          sessionId,
+          messages: [],
+          metadata: {
+            totalMessages: 0,
+            userMessages: 0,
+            assistantMessages: 0
+          }
+        });
+        await session.save();
+      }
+      
+      return session;
+    } catch (error) {
+      console.error('Error obteniendo/creando sesión:', error);
+      throw new Error('Error al gestionar la sesión');
     }
   }
 
   /**
    * Obtener el contexto de una sesión
    * @param {string} sessionId - ID de la sesión
-   * @returns {Array} Array de mensajes del contexto
+   * @returns {Promise<Array>} Array de mensajes del contexto
    */
-  getContext(sessionId) {
-    const sessions = this.store.get('sessions') || {};
-    return sessions[sessionId] || [];
+  async getContext(sessionId) {
+    if (!this.sessionsEnabled) {
+      return [];
+    }
+
+    try {
+      const session = await Session.findOne({ sessionId });
+      return session ? session.messages : [];
+    } catch (error) {
+      console.error('Error obteniendo contexto:', error);
+      return [];
+    }
   }
 
   /**
@@ -29,86 +77,214 @@ class ContextService {
    * @param {string} sessionId - ID de la sesión
    * @param {string} role - Rol del mensaje ('user' o 'assistant')
    * @param {string} content - Contenido del mensaje
+   * @returns {Promise<Object>} Sesión actualizada
    */
-  addMessage(sessionId, role, content) {
-    const sessions = this.store.get('sessions') || {};
-    
-    if (!sessions[sessionId]) {
-      sessions[sessionId] = [];
+  async addMessage(sessionId, role, content) {
+    if (!this.sessionsEnabled) {
+      return null;
     }
 
-    const message = {
-      role,
-      content,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      let session = await this.getOrCreateSession(sessionId);
+      if (!session) return null;
 
-    sessions[sessionId].push(message);
-
-    // Mantener solo los últimos N mensajes
-    if (sessions[sessionId].length > this.maxMessages) {
-      sessions[sessionId] = sessions[sessionId].slice(-this.maxMessages);
+      session.addMessage(role, content, this.maxMessages);
+      await session.save();
+      
+      return session;
+    } catch (error) {
+      console.error('Error agregando mensaje:', error);
+      throw new Error('Error al agregar mensaje al contexto');
     }
-
-    this.store.set('sessions', sessions);
   }
 
   /**
    * Limpiar el contexto de una sesión
    * @param {string} sessionId - ID de la sesión
+   * @returns {Promise<boolean>} Éxito de la operación
    */
-  clearContext(sessionId) {
-    const sessions = this.store.get('sessions') || {};
-    delete sessions[sessionId];
-    this.store.set('sessions', sessions);
+  async clearContext(sessionId) {
+    if (!this.sessionsEnabled) {
+      return false;
+    }
+
+    try {
+      const result = await Session.deleteOne({ sessionId });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error limpiando contexto:', error);
+      throw new Error('Error al limpiar el contexto');
+    }
   }
 
   /**
    * Obtener todas las sesiones
-   * @returns {Object} Objeto con todas las sesiones
+   * @param {number} limit - Límite de resultados
+   * @param {number} skip - Número de resultados a omitir
+   * @returns {Promise<Object>} Objeto con todas las sesiones
    */
-  getAllSessions() {
-    return this.store.get('sessions') || {};
+  async getAllSessions(limit = 50, skip = 0) {
+    if (!this.sessionsEnabled) {
+      return { sessions: [], total: 0 };
+    }
+
+    try {
+      const sessions = await Session.find({})
+        .sort({ lastActivity: -1 })
+        .limit(limit)
+        .skip(skip)
+        .select('sessionId createdAt lastActivity metadata');
+
+      const total = await Session.countDocuments({});
+
+      return {
+        sessions: sessions.map(session => ({
+          sessionId: session.sessionId,
+          createdAt: session.createdAt,
+          lastActivity: session.lastActivity,
+          totalMessages: session.metadata.totalMessages,
+          userMessages: session.metadata.userMessages,
+          assistantMessages: session.metadata.assistantMessages
+        })),
+        total,
+        limit,
+        skip
+      };
+    } catch (error) {
+      console.error('Error obteniendo sesiones:', error);
+      throw new Error('Error al obtener las sesiones');
+    }
   }
 
   /**
    * Obtener estadísticas del contexto
    * @param {string} sessionId - ID de la sesión
-   * @returns {Object} Estadísticas de la sesión
+   * @returns {Promise<Object>} Estadísticas de la sesión
    */
-  getSessionStats(sessionId) {
-    const context = this.getContext(sessionId);
-    const userMessages = context.filter(msg => msg.role === 'user').length;
-    const assistantMessages = context.filter(msg => msg.role === 'assistant').length;
-    
-    return {
-      totalMessages: context.length,
-      userMessages,
-      assistantMessages,
-      maxMessages: this.maxMessages,
-      firstMessage: context.length > 0 ? context[0].timestamp : null,
-      lastMessage: context.length > 0 ? context[context.length - 1].timestamp : null
-    };
+  async getSessionStats(sessionId) {
+    if (!this.sessionsEnabled) {
+      return {
+        sessionId,
+        totalMessages: 0,
+        userMessages: 0,
+        assistantMessages: 0,
+        maxMessages: this.maxMessages,
+        firstMessage: null,
+        lastMessage: null,
+        sessionsEnabled: false
+      };
+    }
+
+    try {
+      const session = await Session.findOne({ sessionId });
+      
+      if (!session) {
+        return {
+          sessionId,
+          totalMessages: 0,
+          userMessages: 0,
+          assistantMessages: 0,
+          maxMessages: this.maxMessages,
+          firstMessage: null,
+          lastMessage: null,
+          sessionsEnabled: true
+        };
+      }
+
+      const stats = session.getStats();
+      return {
+        ...stats,
+        maxMessages: this.maxMessages,
+        sessionsEnabled: true
+      };
+    } catch (error) {
+      console.error('Error obteniendo estadísticas:', error);
+      throw new Error('Error al obtener estadísticas de la sesión');
+    }
   }
 
   /**
    * Formatear el contexto para enviarlo a Gemini
    * @param {string} sessionId - ID de la sesión
-   * @returns {string} Contexto formateado
+   * @returns {Promise<string>} Contexto formateado
    */
-  formatContextForGemini(sessionId) {
-    const context = this.getContext(sessionId);
-    
-    if (context.length === 0) {
+  async formatContextForGemini(sessionId) {
+    if (!this.sessionsEnabled) {
       return '';
     }
 
-    const formattedMessages = context.map(msg => {
-      const role = msg.role === 'user' ? 'Usuario' : 'Asistente';
-      return `${role}: ${msg.content}`;
-    }).join('\n\n');
+    try {
+      const session = await Session.findOne({ sessionId });
+      return session ? session.formatContextForGemini() : '';
+    } catch (error) {
+      console.error('Error formateando contexto:', error);
+      return '';
+    }
+  }
 
-    return `Contexto de la conversación anterior:\n\n${formattedMessages}\n\n---\n\n`;
+  /**
+   * Limpiar sesiones antiguas
+   * @param {number} daysOld - Días de antigüedad
+   * @returns {Promise<number>} Número de sesiones eliminadas
+   */
+  async cleanOldSessions(daysOld = 30) {
+    if (!this.sessionsEnabled) {
+      return 0;
+    }
+
+    try {
+      const result = await Session.cleanOldSessions(daysOld);
+      return result.deletedCount || 0;
+    } catch (error) {
+      console.error('Error limpiando sesiones antiguas:', error);
+      throw new Error('Error al limpiar sesiones antiguas');
+    }
+  }
+
+  /**
+   * Obtener estadísticas generales del sistema
+   * @returns {Promise<Object>} Estadísticas generales
+   */
+  async getSystemStats() {
+    if (!this.sessionsEnabled) {
+      return {
+        totalSessions: 0,
+        totalMessages: 0,
+        avgMessagesPerSession: 0,
+        oldestSession: null,
+        newestSession: null,
+        sessionsEnabled: false
+      };
+    }
+
+    try {
+      const totalSessions = await Session.countDocuments({});
+      const pipeline = [
+        {
+          $group: {
+            _id: null,
+            totalMessages: { $sum: '$metadata.totalMessages' },
+            avgMessages: { $avg: '$metadata.totalMessages' },
+            oldestSession: { $min: '$createdAt' },
+            newestSession: { $max: '$createdAt' }
+          }
+        }
+      ];
+
+      const [stats] = await Session.aggregate(pipeline);
+
+      return {
+        totalSessions,
+        totalMessages: stats?.totalMessages || 0,
+        avgMessagesPerSession: Math.round(stats?.avgMessages || 0),
+        oldestSession: stats?.oldestSession || null,
+        newestSession: stats?.newestSession || null,
+        sessionsEnabled: true
+      };
+    } catch (error) {
+      console.error('Error obteniendo estadísticas del sistema:', error);
+      throw new Error('Error al obtener estadísticas del sistema');
+    }
   }
 }
 

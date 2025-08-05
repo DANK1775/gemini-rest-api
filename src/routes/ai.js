@@ -63,21 +63,17 @@ router.get('/',
   aiLimiter,
   validateAiRequest,
   asyncErrorHandler(async (req, res) => {
-    const { prompt, sessionId = 'default', useContext = true } = req.query;
+    const { prompt, sessionId, useContext } = req.query;
     
-    let response;
-    if (useContext) {
-      response = await geminiService.generateWithContext(prompt, sessionId);
-    } else {
-      response = await geminiService.generate(prompt);
-    }
+    const result = await geminiService.generateWithContext(prompt, sessionId, useContext);
 
     res.json({
       request: prompt,
-      response,
-      sessionId: useContext ? sessionId : null,
-      timestamp: new Date().toISOString(),
-      useContext
+      response: result.response,
+      sessionId: result.sessionId,
+      contextUsed: result.contextUsed,
+      sessionsEnabled: result.sessionsEnabled,
+      timestamp: new Date().toISOString()
     });
   })
 );
@@ -132,21 +128,17 @@ router.post('/',
   aiLimiter,
   validateAiPostRequest,
   asyncErrorHandler(async (req, res) => {
-    const { prompt, sessionId = 'default', useContext = true } = req.body;
+    const { prompt, sessionId, useContext } = req.body;
     
-    let response;
-    if (useContext) {
-      response = await geminiService.generateWithContext(prompt, sessionId);
-    } else {
-      response = await geminiService.generate(prompt);
-    }
+    const result = await geminiService.generateWithContext(prompt, sessionId, useContext);
 
     res.json({
       request: prompt,
-      response,
-      sessionId: useContext ? sessionId : null,
-      timestamp: new Date().toISOString(),
-      useContext
+      response: result.response,
+      sessionId: result.sessionId,
+      contextUsed: result.contextUsed,
+      sessionsEnabled: result.sessionsEnabled,
+      timestamp: new Date().toISOString()
     });
   })
 );

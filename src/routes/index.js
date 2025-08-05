@@ -108,14 +108,39 @@ router.get('/', (req, res) => {
  *                 environment:
  *                   type: string
  *                   example: "development"
+ *                 database:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                     connected:
+ *                       type: boolean
+ *                 sessions:
+ *                   type: object
+ *                   properties:
+ *                     enabled:
+ *                       type: boolean
  */
-router.get('/health', (req, res) => {
+router.get('/health', async (req, res) => {
+  const database = require('../config/database');
+  const contextService = require('../services/contextService');
+  
+  let dbHealth = { status: 'disabled', connected: false };
+  
+  if (contextService.areSessionsEnabled()) {
+    dbHealth = await database.healthCheck();
+  }
+
   res.json({
     status: 'healthy',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    database: dbHealth,
+    sessions: {
+      enabled: contextService.areSessionsEnabled()
+    }
   });
 });
 

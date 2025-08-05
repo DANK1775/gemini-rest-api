@@ -8,6 +8,7 @@ const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 
 const config = require('./src/config/config');
+const database = require('./src/config/database');
 const swaggerSpecs = require('./src/config/swagger');
 const { generalLimiter } = require('./src/middleware/rateLimiter');
 const { errorHandler, notFound } = require('./src/middleware/errorHandler');
@@ -20,6 +21,19 @@ const contextRoutes = require('./src/routes/context');
 
 const app = express();
 const port = config.port;
+
+// Inicializar base de datos si las sesiones están habilitadas
+async function initializeDatabase() {
+  if (config.context.enableSessions) {
+    try {
+      await database.connect();
+      console.log('✅ Base de datos inicializada');
+    } catch (error) {
+      console.error('⚠️  Error conectando a la base de datos:', error.message);
+      console.log('🔄 El servidor continuará sin persistencia de sesiones');
+    }
+  }
+}
 
 // Configurar proxy si está habilitado
 if (config.proxy.trust) {
@@ -108,15 +122,30 @@ app.get('/api', async (req, res, next) => {
 app.use(notFound);
 app.use(errorHandler);
 
-// Iniciar servidor
-app.listen(port, () => {
-  console.log(`🚀 Servidor iniciado en puerto ${port}`);
-  console.log(`📚 Documentación disponible en: http://localhost:${port}/api-docs`);
-  console.log(`🌍 Entorno: ${config.nodeEnv}`);
-  console.log(`🔒 Seguridad: helmet habilitado`);
-  console.log(`⚡ Rate limiting: ${config.rateLimit.maxRequests} req/${Math.ceil(config.rateLimit.windowMs / 1000 / 60)} min`);
-  console.log(`💾 Contexto: máximo ${config.context.maxMessages} mensajes por sesión`);
-});
+// Función principal para iniciar el servidor
+async function startServer() {
+  try {
+    // Inicializar base de datos
+    await initializeDatabase();
+    
+    // Iniciar servidor
+    app.listen(port, () => {
+      console.log(`🚀 Servidor iniciado en puerto ${port}`);
+      console.log(`📚 Documentación disponible en: http://localhost:${port}/api-docs`);
+      console.log(`🌍 Entorno: ${config.nodeEnv}`);
+      console.log(`🔒 Seguridad: helmet habilitado`);
+      console.log(`⚡ Rate limiting: ${config.rateLimit.maxRequests} req/${Math.ceil(config.rateLimit.windowMs / 1000 / 60)} min`);
+      console.log(`💾 Contexto: máximo ${config.context.maxMessages} mensajes por sesión`);
+      console.log(`🗄️  Sesiones: ${config.context.enableSessions ? 'habilitadas' : 'deshabilitadas'}`);
+      if (config.context.enableSessions && database.isConnected) {
+        console.log(`📊 MongoDB: conectado`);
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error iniciando el servidor:', error);
+    process.exit(1);
+  }
+}
 
 // Manejo de errores no capturados
 process.on('unhandledRejection', (err, promise) => {
@@ -133,4 +162,24 @@ process.on('uncaughtException', (err) => {
   }
   process.exit(1);
 });
+
+// Manejo de señales de cierre
+process.on('SIGTERM', async () => {
+  console.log('🔄 Recibida señal SIGTERM, cerrando servidor...');
+  if (database.isConnected) {
+    await database.disconnect();
+  }
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🔄 Recibida señal SIGINT, cerrando servidor...');
+  if (database.isConnected) {
+    await database.disconnect();
+  }
+  process.exit(0);
+});
+
+// Iniciar el servidor
+startServer();
 

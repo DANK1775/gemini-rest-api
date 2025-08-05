@@ -95,6 +95,17 @@ const validateConfig = (config) => {
     errors.push('Max context messages must be greater than 0');
   }
   
+  // Validar configuración de MongoDB si las sesiones están habilitadas
+  if (config.context.enableSessions) {
+    if (!config.mongodb.uri) {
+      errors.push('MONGODB_URI is required when sessions are enabled');
+    }
+    
+    if (!config.mongodb.dbName) {
+      errors.push('MONGODB_DB_NAME is required when sessions are enabled');
+    }
+  }
+  
   return errors;
 };
 

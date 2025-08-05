@@ -60,20 +60,33 @@ router.post('/',
   aiLimiter,
   validateChatRequest,
   asyncErrorHandler(async (req, res) => {
-    const { message, sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` } = req.body;
+    const { message, sessionId } = req.body;
     
-    const response = await geminiService.chatWithHistory(message, sessionId);
-    
-    // Obtener estadísticas de la sesión
+    // Generar sessionId automático solo si las sesiones están habilitadas y no se proporciona uno
     const contextService = require('../services/contextService');
-    const stats = contextService.getSessionStats(sessionId);
+    let finalSessionId = sessionId;
+    
+    if (contextService.areSessionsEnabled() && !sessionId) {
+      finalSessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    const result = await geminiService.chatWithHistory(message, finalSessionId);
+    
+    // Obtener estadísticas de la sesión si las sesiones están habilitadas
+    let messageCount = 0;
+    if (result.contextUsed && result.sessionId) {
+      const stats = await contextService.getSessionStats(result.sessionId);
+      messageCount = stats.totalMessages;
+    }
 
     res.json({
       message,
-      response,
-      sessionId,
+      response: result.response,
+      sessionId: result.sessionId,
+      contextUsed: result.contextUsed,
+      sessionsEnabled: result.sessionsEnabled,
       timestamp: new Date().toISOString(),
-      messageCount: stats.totalMessages
+      messageCount
     });
   })
 );
