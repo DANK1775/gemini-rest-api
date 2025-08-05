@@ -1,6 +1,6 @@
 # Gemini REST API
 
-API REST para interactuar with Google Gemini AI con contexto persistente, seguridad mejorada y documentación completa.
+API REST para interactuar con Google Gemini AI con contexto persistente, seguridad mejorada y documentación completa.
 
 ## 🚀 Características
 
@@ -243,6 +243,15 @@ pm2 start index.js --name "gemini-api"
 ISC
 
 ## 👨‍💻 Autor
+
+**DANK1775**
+- GitHub: [@DANK1775](https://github.com/DANK1775)
+- Discord: dank.js
+
+## 🤝 Contributors
+
+**manalejandro**
+- GitHub: [@manalejandro](https://github.com/manalejandro)
 
 **DANK1775**
 - GitHub: [@DANK1775](https://github.com/DANK1775)
