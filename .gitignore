@@ -12,8 +12,8 @@ yarn-error.log*
 .env.production
 
 # Archivos de datos
-data/
 *.json
+!data/*.json
 !package.json
 !package-lock.json
 !vercel.json
