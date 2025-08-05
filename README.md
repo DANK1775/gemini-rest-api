@@ -253,9 +253,6 @@ ISC
 **manalejandro**
 - GitHub: [@manalejandro](https://github.com/manalejandro)
 
-**DANK1775**
-- GitHub: [@DANK1775](https://github.com/DANK1775)
-- Discord: dank.js
 
 ## 🤝 Contribuir
 
