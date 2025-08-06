@@ -21,6 +21,8 @@ const contextRoutes = require('./src/routes/context');
 
 const app = express();
 const port = config.port;
+// middlewares
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Inicializar base de datos si las sesiones están habilitadas
 async function initializeDatabase() {
