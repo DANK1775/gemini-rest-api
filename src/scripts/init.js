@@ -14,7 +14,7 @@ async function init() {
   if (configErrors.length > 0) {
     console.error('❌ Errores de configuración encontrados:');
     configErrors.forEach(error => console.error(`   - ${error}`));
-    console.log('\n💡 Revisa tu archivo .env y asegúrate de que todas las variables estén configuradas correctamente.');
+    console.warn('\n💡 Revisa tu archivo .env y asegúrate de que todas las variables estén configuradas correctamente.');
     process.exit(1);
   }
 
@@ -74,7 +74,11 @@ async function init() {
 }
 
 // Ejecutar la función de inicialización
-init().catch(error => {
-  console.error('❌ Error durante la inicialización:', error);
-  process.exit(1);
-});
+init()
+  .then(() => {
+    process.exit(0); // salir de init y continuar con el servidor
+  })
+  .catch(error => {
+    console.error('❌ Error durante la inicialización:', error);
+    process.exit(1);
+  });

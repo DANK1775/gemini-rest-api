@@ -84,7 +84,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   customSiteTitle: 'Gemini AI API Docs'
 }));
 
-// Rutas
+// Favicon ruta
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+//Rutas
 app.use('/', indexRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/chat', chatRoutes);
