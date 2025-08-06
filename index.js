@@ -96,7 +96,7 @@ app.get('/api', async (req, res, next) => {
     if (req.query.prompt) {
       // Redirigir a la nueva ruta con deprecation warning
       res.set('X-Deprecated', 'true');
-      res.set('X-Deprecation-Message', 'Este endpoint está deprecado. Usa /api/ai en su lugar.');
+      res.set('X-Deprecation-Message', 'Este endpoint esta deprecado. Usa /api/ai en su lugar.');
       
       const geminiService = require('./src/services/geminiService');
       const response = await geminiService.generate(req.query.prompt.toString());
@@ -104,7 +104,7 @@ app.get('/api', async (req, res, next) => {
       res.json({
         request: req.query.prompt,
         response,
-        warning: 'Este endpoint está deprecado. Usa /api/ai en su lugar.'
+        warning: 'Este endpoint esta deprecado. Usa /api/ai en su lugar.'
       });
     } else {
       res.status(400).json({
