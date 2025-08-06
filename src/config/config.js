@@ -7,7 +7,8 @@ const config = {
   
   // API Key de Gemini
   geminiKey: process.env.GEMINIKEY,
-  
+  // Modelo de Gemini
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite',
   // Configuración de MongoDB
   mongodb: {
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/gemini-api',

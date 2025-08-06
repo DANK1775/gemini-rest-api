@@ -36,7 +36,7 @@ class GeminiService {
     ];
 
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: config.geminiModel,
       generationConfig: this.generationConfig,
       safetySettings: this.safetySettings
     });
@@ -175,7 +175,7 @@ class GeminiService {
    */
   getServiceInfo() {
     return {
-      model: "gemini-2.0-flash-exp",
+      model: config.geminiModel,
       sessionsEnabled: contextService.areSessionsEnabled(),
       maxContextMessages: config.context.maxMessages,
       generationConfig: this.generationConfig
