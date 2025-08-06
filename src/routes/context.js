@@ -67,8 +67,15 @@ router.get('/:sessionId',
   asyncErrorHandler(async (req, res) => {
     const { sessionId } = req.params;
     
-    const context = contextService.getContext(sessionId);
-    const stats = contextService.getSessionStats(sessionId);
+    if (!contextService.areSessionsEnabled()) {
+      return res.status(400).json({
+        error: 'Las sesiones están deshabilitadas',
+        sessionsEnabled: false
+      });
+    }
+    
+    const context = await contextService.getContext(sessionId);
+    const stats = await contextService.getSessionStats(sessionId);
 
     res.json({
       sessionId,
@@ -117,7 +124,14 @@ router.get('/:sessionId/stats',
   asyncErrorHandler(async (req, res) => {
     const { sessionId } = req.params;
     
-    const stats = contextService.getSessionStats(sessionId);
+    if (!contextService.areSessionsEnabled()) {
+      return res.status(400).json({
+        error: 'Las sesiones están deshabilitadas',
+        sessionsEnabled: false
+      });
+    }
+    
+    const stats = await contextService.getSessionStats(sessionId);
 
     res.json({
       sessionId,
@@ -173,11 +187,19 @@ router.delete('/:sessionId',
   asyncErrorHandler(async (req, res) => {
     const { sessionId } = req.params;
     
-    contextService.clearContext(sessionId);
+    if (!contextService.areSessionsEnabled()) {
+      return res.status(400).json({
+        error: 'Las sesiones están deshabilitadas',
+        sessionsEnabled: false
+      });
+    }
+    
+    const deleted = await contextService.clearContext(sessionId);
 
     res.json({
-      message: 'Contexto limpiado exitosamente',
+      message: deleted ? 'Contexto limpiado exitosamente' : 'Sesión no encontrada',
       sessionId,
+      deleted,
       timestamp: new Date().toISOString()
     });
   })
@@ -223,12 +245,67 @@ router.delete('/:sessionId',
  */
 router.get('/',
   asyncErrorHandler(async (req, res) => {
-    const sessions = contextService.getAllSessions();
-    const sessionIds = Object.keys(sessions);
+    if (!contextService.areSessionsEnabled()) {
+      return res.json({
+        message: 'Las sesiones están deshabilitadas',
+        sessions: {},
+        totalSessions: 0,
+        sessionsEnabled: false,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const { limit = 50, skip = 0 } = req.query;
+    const result = await contextService.getAllSessions(parseInt(limit), parseInt(skip));
 
     res.json({
-      sessions,
-      totalSessions: sessionIds.length,
+      ...result,
+      sessionsEnabled: true,
+      timestamp: new Date().toISOString()
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/context/stats:
+ *   get:
+ *     summary: Obtener estadísticas generales del sistema
+ *     tags: [Context]
+ *     responses:
+ *       200:
+ *         description: Estadísticas generales del sistema
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 systemStats:
+ *                   type: object
+ *                   properties:
+ *                     totalSessions:
+ *                       type: integer
+ *                     totalMessages:
+ *                       type: integer
+ *                     avgMessagesPerSession:
+ *                       type: number
+ *                     oldestSession:
+ *                       type: string
+ *                       format: date-time
+ *                     newestSession:
+ *                       type: string
+ *                       format: date-time
+ *                     sessionsEnabled:
+ *                       type: boolean
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/stats',
+  asyncErrorHandler(async (req, res) => {
+    const systemStats = await contextService.getSystemStats();
+
+    res.json({
+      systemStats,
       timestamp: new Date().toISOString()
     });
   })

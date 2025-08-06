@@ -8,6 +8,12 @@ const config = {
   // API Key de Gemini
   geminiKey: process.env.GEMINIKEY,
   
+  // Configuración de MongoDB
+  mongodb: {
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/gemini-api',
+    dbName: process.env.MONGODB_DB_NAME || 'gemini-api',
+  },
+  
   // Configuración de seguridad
   jwtSecret: process.env.JWT_SECRET || 'default-secret-change-in-production',
   
@@ -33,7 +39,7 @@ const config = {
   // Contexto
   context: {
     maxMessages: parseInt(process.env.MAX_CONTEXT_MESSAGES) || 100,
-    filePath: process.env.CONTEXT_FILE_PATH || './data/context.json',
+    enableSessions: process.env.ENABLE_SESSIONS !== 'false', // Por defecto habilitado
   },
   
   // Swagger

@@ -1,10 +1,10 @@
 # Gemini REST API
 
-API REST para interactuar con Google Gemini AI con contexto persistente, seguridad mejorada y documentación completa.
+API REST para interactuar con Google Gemini AI con contexto persistente opcional usando MongoDB, seguridad mejorada y documentación completa.
 
 ## 🚀 Características
 
-- **Contexto Persistente**: Mantiene hasta 100 mensajes por sesión usando `json-store`
+- **Contexto Persistente Opcional**: Mantiene hasta 100 mensajes por sesión usando MongoDB (se puede deshabilitar)
 - **Seguridad Mejorada**: Implementa helmet, CORS, rate limiting y validación de entrada
 - **Documentación Interactiva**: Swagger UI integrado
 - **Chat Conversacional**: Endpoint optimizado para conversaciones naturales
@@ -12,11 +12,13 @@ API REST para interactuar con Google Gemini AI con contexto persistente, segurid
 - **Manejo de Errores**: Sistema robusto de manejo de errores
 - **Rate Limiting**: Límites configurables para prevenir abuso
 - **Proxy Ready**: Configurado para funcionar detrás de proxies
+- **Sesiones Opcionales**: Funciona con o sin persistencia de contexto
 
 ## 📋 Requisitos
 
 - Node.js 16+
 - API Key de Google Gemini AI
+- MongoDB (opcional, solo si se habilitan las sesiones)
 - NPM o Yarn
 
 ## 🛠️ Instalación
