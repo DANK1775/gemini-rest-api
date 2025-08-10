@@ -22,7 +22,7 @@ const options = {
         description: 'Servidor de desarrollo',
       },
       {
-        url: 'https://your-production-domain.com',
+        url: 'https://gemini-rest.vercel.app/',
         description: 'Servidor de producción',
       },
     ],
