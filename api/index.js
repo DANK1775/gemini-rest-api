@@ -7,21 +7,22 @@ const compression = require('compression');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 
-const config = require('./src/config/config');
-const database = require('./src/config/database');
-const swaggerSpecs = require('./src/config/swagger');
-const { generalLimiter } = require('./src/middleware/rateLimiter');
-const { errorHandler, notFound } = require('./src/middleware/errorHandler');
+const config = require('../src/config/config');
+const database = require('../src/config/database');
+const swaggerSpecs = require('../public/swagger.json');
+const { generalLimiter } = require('../src/middleware/rateLimiter');
+const { errorHandler, notFound } = require('../src/middleware/errorHandler');
 
 // Importar rutas
-const indexRoutes = require('./src/routes/index');
-const aiRoutes = require('./src/routes/ai');
-const chatRoutes = require('./src/routes/chat');
-const contextRoutes = require('./src/routes/context');
+const indexRoutes = require('../src/routes/index');
+const aiRoutes = require('../src/routes/ai');
+const chatRoutes = require('../src/routes/chat');
+const contextRoutes = require('../src/routes/context');
 
 const app = express();
 const port = config.port;
 // middlewares
+app.use('/public', express.static('public'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Inicializar base de datos si las sesiones están habilitadas
@@ -102,7 +103,7 @@ app.get('/api', async (req, res, next) => {
       res.set('X-Deprecated', 'true');
       res.set('X-Deprecation-Message', 'Este endpoint esta deprecado. Usa /api/ai en su lugar.');
       
-      const geminiService = require('./src/services/geminiService');
+      const geminiService = require('../src/services/geminiService');
       const response = await geminiService.generate(req.query.prompt.toString());
       
       res.json({

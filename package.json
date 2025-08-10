@@ -2,11 +2,13 @@
   "name": "gemini-api",
   "version": "1.0.0",
   "description": "API REST para Gemini AI con contexto persistente y seguridad mejorada",
-  "main": "index.js",
+  "main": "api/index.js",
   "scripts": {
+    "build:swagger": "node src/scripts/generate-swagger.js",
+    "build": "npm run build:swagger",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/scripts/init.js && node index.js",
-    "dev": "node src/scripts/init.js && nodemon index.js",
+    "start": "node src/scripts/init.js && node api/index.js",
+    "dev": "node src/scripts/init.js && nodemon api/index.js",
     "init": "node src/scripts/init.js"
   },
   "keywords": ["gemini", "ai", "api", "rest", "context"],

@@ -1,31 +1,17 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "index.js",
-        "use": "@vercel/node"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/api/(.*)",
-        "dest": "index.js"
-      },
-      {
-        "src": "/api-docs/(.*)",
-        "dest": "index.js"
-      },
-      {
-        "src": "/health",
-        "dest": "index.js"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "index.js"
-      }
-    ],
-    "env": {
-      "NODE_ENV": "production"
+  "version": 2,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "{public/swagger.json,node_modules/swagger-ui-dist/**}"
     }
+  },
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "api/index.js" },
+    { "src": "/health", "dest": "api/index.js" },
+    { "src": "/(.*)", "dest": "api/index.js" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
-  
