@@ -17,6 +17,7 @@ yarn-error.log*
 !package.json
 !package-lock.json
 !vercel.json
+!public/*.json
 
 # Logs
 logs
