@@ -12,6 +12,7 @@ const database = require('../src/config/database');
 const swaggerSpecs = require('../public/swagger.json');
 const { generalLimiter } = require('../src/middleware/rateLimiter');
 const { errorHandler, notFound } = require('../src/middleware/errorHandler');
+const { errors: celebrateErrors } = require('celebrate');
 
 // Importar rutas
 const indexRoutes = require('../src/routes/index');
@@ -124,6 +125,9 @@ app.get('/api', async (req, res, next) => {
 });
 
 // Middleware de manejo de errores
+// celebrate error handler (formatting for Joi validation errors)
+app.use(celebrateErrors());
+
 app.use(notFound);
 app.use(errorHandler);
 
