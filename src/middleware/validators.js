@@ -1,114 +1,58 @@
-const { body, query, param, validationResult } = require('express-validator');
+const { celebrate, Joi, errors: celebrateErrors, Segments } = require('celebrate');
 
-// Middleware para manejar errores de validación
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Datos de entrada inválidos',
-      details: errors.array().map(error => ({
-        field: error.path,
-        message: error.msg,
-        value: error.value
-      }))
-    });
+// Validaciones para el endpoint de IA (GET query)
+const validateAiRequest = celebrate({
+  [Segments.QUERY]: Joi.object({
+    prompt: Joi.string().min(1).max(4000).required().trim().messages({
+      'string.base': 'El prompt debe ser una cadena',
+      'string.empty': 'El prompt es requerido',
+      'string.min': 'El prompt debe tener al menos {#limit} caracteres',
+      'string.max': 'El prompt debe tener como máximo {#limit} caracteres'
+    }),
+    sessionId: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).max(100).optional(),
+    useContext: Joi.boolean().optional()
+  })
+});
+
+// Validaciones para endpoints POST de IA (body)
+const validateAiPostRequest = celebrate({
+  [Segments.BODY]: Joi.object({
+    prompt: Joi.string().min(1).max(4000).required().trim(),
+    sessionId: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).max(100).optional(),
+    useContext: Joi.boolean().optional()
+  })
+});
+
+// Validaciones para operaciones de contexto (params)
+const validateContextRequest = celebrate({
+  [Segments.PARAMS]: Joi.object({
+    sessionId: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).max(100).required()
+  })
+});
+
+// Validación para chat con historial (body)
+const validateChatRequest = celebrate({
+  [Segments.BODY]: Joi.object({
+    message: Joi.string().min(1).max(4000).required().trim(),
+    sessionId: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).max(100).optional()
+  })
+});
+
+// Exportamos un middleware para manejar errores de celebrate en las rutas
+const handleValidationErrors = (err, req, res, next) => {
+  // celebrate arroja un error específico que podemos formatear
+  if (err && err.joi) {
+    const details = err.joi.details.map(d => ({ field: d.path.join('.'), message: d.message, value: d.context && d.context.value }));
+    return res.status(400).json({ error: 'Datos de entrada inválidos', details });
   }
-  next();
+  next(err);
 };
-
-// Validaciones para el endpoint de IA
-const validateAiRequest = [
-  query('prompt')
-    .notEmpty()
-    .withMessage('El prompt es requerido')
-    .isLength({ min: 1, max: 4000 })
-    .withMessage('El prompt debe tener entre 1 y 4000 caracteres')
-    .trim()
-    .escape(),
-  
-  query('sessionId')
-    .optional()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('El sessionId debe tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('El sessionId solo puede contener letras, números, guiones y guiones bajos')
-    .trim(),
-  
-  query('useContext')
-    .optional()
-    .isBoolean()
-    .withMessage('useContext debe ser un booleano')
-    .toBoolean(),
-  
-  handleValidationErrors
-];
-
-// Validaciones para endpoints POST de IA
-const validateAiPostRequest = [
-  body('prompt')
-    .notEmpty()
-    .withMessage('El prompt es requerido')
-    .isLength({ min: 1, max: 4000 })
-    .withMessage('El prompt debe tener entre 1 y 4000 caracteres')
-    .trim()
-    .escape(),
-  
-  body('sessionId')
-    .optional()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('El sessionId debe tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('El sessionId solo puede contener letras, números, guiones y guiones bajos')
-    .trim(),
-  
-  body('useContext')
-    .optional()
-    .isBoolean()
-    .withMessage('useContext debe ser un booleano')
-    .toBoolean(),
-  
-  handleValidationErrors
-];
-
-// Validaciones para operaciones de contexto
-const validateContextRequest = [
-  param('sessionId')
-    .notEmpty()
-    .withMessage('El sessionId es requerido')
-    .isLength({ min: 1, max: 100 })
-    .withMessage('El sessionId debe tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('El sessionId solo puede contener letras, números, guiones y guiones bajos')
-    .trim(),
-  
-  handleValidationErrors
-];
-
-// Validación para chat con historial
-const validateChatRequest = [
-  body('message')
-    .notEmpty()
-    .withMessage('El mensaje es requerido')
-    .isLength({ min: 1, max: 4000 })
-    .withMessage('El mensaje debe tener entre 1 y 4000 caracteres')
-    .trim()
-    .escape(),
-  
-  body('sessionId')
-    .optional()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('El sessionId debe tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('El sessionId solo puede contener letras, números, guiones y guiones bajos')
-    .trim(),
-  
-  handleValidationErrors
-];
 
 module.exports = {
   validateAiRequest,
   validateAiPostRequest,
   validateContextRequest,
   validateChatRequest,
-  handleValidationErrors
+  handleValidationErrors,
+  celebrateErrors
 };
