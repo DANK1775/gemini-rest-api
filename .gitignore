@@ -100,7 +100,8 @@ dist
 
 # Gatsby files
 .cache/
-public
+# allow public folder files (API docs)
+!public/
 
 # Storybook build outputs
 .out
