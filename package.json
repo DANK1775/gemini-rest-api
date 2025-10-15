@@ -21,11 +21,12 @@
     "mongoose": "^8.0.3",
     "helmet": "^7.1.0",
     "cors": "^2.8.5",
-    "express-validator": "^7.0.1",
+  "celebrate": "^15.0.3",
+  "joi": "^18.0.1",
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^7.1.5",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.0",
+    
+  "swagger-ui-express": "^5.0.0",
     "compression": "^1.7.4",
     "morgan": "^1.10.0"
   },
