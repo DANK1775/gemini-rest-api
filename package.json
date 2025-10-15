@@ -4,33 +4,34 @@
   "description": "API REST para Gemini AI con contexto persistente y seguridad mejorada",
   "main": "api/index.js",
   "scripts": {
-    "build:swagger": "node src/scripts/generate-swagger.js",
-    "build": "npm run build:swagger",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/scripts/init.js && node api/index.js",
     "dev": "node src/scripts/init.js && nodemon api/index.js",
     "init": "node src/scripts/init.js"
   },
-  "keywords": ["gemini", "ai", "api", "rest", "context"],
+  "keywords": [
+    "gemini",
+    "ai",
+    "api",
+    "rest",
+    "context"
+  ],
   "author": "DANK1775",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.10.0",
+    "celebrate": "^15.0.3",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
-    "mongoose": "^8.0.3",
-    "helmet": "^7.1.0",
-    "cors": "^2.8.5",
-  "celebrate": "^15.0.3",
-  "joi": "^18.0.1",
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^7.1.5",
-    
-  "swagger-ui-express": "^5.0.0",
-  "glob": "^8.1.0",
-  "js-yaml": "^4.1.0",
-    "compression": "^1.7.4",
-    "morgan": "^1.10.0"
+    "helmet": "^7.1.0",
+    "joi": "^18.0.1",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
