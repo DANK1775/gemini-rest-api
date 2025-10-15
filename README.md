@@ -1,221 +1,181 @@
+
 # Gemini REST API
 
-API REST para interactuar con Google Gemini AI con contexto persistente opcional usando MongoDB, seguridad mejorada y documentación completa.
+High-level REST API to interact with Google Gemini (Generative AI), with optional persistent conversation context, enhanced security, and live API documentation.
 
-## 🚀 Características
+This repository is an opinionated starter for building serverless-friendly or containerized services that wrap a LLM (Gemini) with session/context support and production-ready middleware.
 
-- **Contexto Persistente Opcional**: Mantiene hasta 100 mensajes por sesión usando MongoDB (se puede deshabilitar)
-- **Seguridad Mejorada**: Implementa helmet, CORS, rate limiting y validación de entrada
-- **Documentación Interactiva**: Swagger UI integrado
-- **Chat Conversacional**: Endpoint optimizado para conversaciones naturales
-- **Validación Robusta**: Validación de entrada con `express-validator`
-- **Manejo de Errores**: Sistema robusto de manejo de errores
-- **Rate Limiting**: Límites configurables para prevenir abuso
-- **Proxy Ready**: Configurado para funcionar detrás de proxies
-- **Sesiones Opcionales**: Funciona con o sin persistencia de contexto
+Highlights
 
-## 📋 Requisitos
+- Optional persistent conversation context (MongoDB)
+- Secure defaults: Helmet, CORS, rate limiting
+- Interactive OpenAPI docs (Swagger UI)
+- Chat-optimized endpoints and conversational helpers
+- Input validation with celebrate/Joi (migrated from express-validator)
+- Minimal external footprint to ease serverless deployments (includes pre-generated `public/swagger.json`)
+
+Table of contents
+
+- Features
+- Requirements
+- Quick start
+- Environment variables
+- Scripts
+- API endpoints (summary)
+- Examples
+- Security & operational notes
+- Deployment
+- Project structure
+- Changelog
+- Contributing
+
+Features
+
+- Context persistence: optional session storage (MongoDB) to keep conversation history up to a configured size.
+- Rate limiting: general and route-level limits to reduce abuse.
+- Input validation: migrate to `celebrate` + `Joi` for robust request validation.
+- OpenAPI: static `public/swagger.json` is included for serverless-friendly docs.
+
+Requirements
 
 - Node.js 16+
-- API Key de Google Gemini AI
-- MongoDB (opcional, solo si se habilitan las sesiones)
-- NPM o Yarn
+- Google Gemini API key (or configured equivalent)
+- MongoDB (optional, only if you enable persistent sessions)
 
-## 🛠️ Instalación
+Quick start
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone <tu-repositorio>
-   cd gemini-rest-api
-   ```
+1. Clone the repository:
 
-2. **Instalar dependencias**
-   ```bash
-   npm install
-   ```
-
-3. **Configurar variables de entorno**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edita el archivo `.env` con tus configuraciones:
-   ```env
-   GEMINIKEY=tu_api_key_de_gemini
-   PORT=3000
-   NODE_ENV=production
-   # ... otras configuraciones
-   ```
-
-4. **Inicializar y arrancar**
-   ```bash
-   npm start
-   ```
-
-## 🔧 Scripts Disponibles
-
-- `npm start` - Inicializa y arranca el servidor en producción
-- `npm run dev` - Inicializa y arranca en modo desarrollo con nodemon
-- `npm run init` - Solo ejecuta la inicialización
-
-## 📖 API Endpoints
-
-### General
-
-- `GET /` - Información general de la API
-- `GET /health` - Health check del servicio
-- `GET /api-docs` - Documentación Swagger interactiva
-
-### IA
-
-- `GET /api/ai?prompt=<mensaje>&sessionId=<id>&useContext=<boolean>` - Generar respuesta
-- `POST /api/ai` - Generar respuesta (método POST)
-
-### Chat Conversacional
-
-- `POST /api/chat` - Chat optimizado con historial completo
-
-### Gestión de Contexto
-
-- `GET /api/context` - Listar todas las sesiones
-- `GET /api/context/:sessionId` - Obtener contexto de una sesión
-- `GET /api/context/:sessionId/stats` - Estadísticas de una sesión
-- `DELETE /api/context/:sessionId` - Limpiar contexto de una sesión
-
-### Compatibilidad (Deprecado)
-
-- `GET /api?prompt=<mensaje>` - Endpoint legacy (deprecado)
-
-## 📝 Ejemplos de Uso
-
-### Chat Básico
-
-```bash
-curl -X POST http://localhost:3000/api/chat \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "message": "Hola, ¿cómo estás?",
-    "sessionId": "mi_sesion_123"
-  }'
+```powershell
+git clone "https://github.com/DANK1775/gemini-rest-api"
+cd gemini-rest-api
 ```
 
-### Generar Respuesta con Contexto
+2. Install dependencies:
 
-```bash
-curl -X POST http://localhost:3000/api/ai \\
-  -H "Content-Type: application/json" \\
+```powershell
+npm install
+```
+
+3. Copy and edit environment variables:
+
+```powershell
+copy .env.example .env
+# then open .env and set values (GEMINIKEY, MONGODB_URI, etc.)
+```
+
+4. Run initialization script and start (development):
+
+```powershell
+npm run dev
+```
+
+Or in production:
+
+```powershell
+npm start
+```
+
+Scripts
+
+- `npm run init` — initialize runtime artifacts (data folders, sample files)
+- `npm run build:swagger` — regenerate `public/swagger.json` from internal spec (kept static for serverless)
+- `npm run build` — alias for `build:swagger`
+- `npm run dev` — run init + nodemon server
+- `npm start` — run init + production server
+
+API Endpoints (summary)
+
+Note: full OpenAPI specification available at `/api-docs` (Swagger UI) and shipped in `public/swagger.json`.
+
+- GET / — basic info (legacy)
+- GET /health — health check
+- GET /api-docs — interactive Swagger UI
+
+AI endpoints
+- GET /api/ai?prompt=...&sessionId=...&useContext=... — generate response (query)
+- POST /api/ai — generate response (JSON body)
+
+Chat
+- POST /api/chat — chat endpoint with optional sessionId to persist or resume context
+
+Context management
+- GET /api/context — list sessions (if persistence enabled)
+- GET /api/context/:sessionId — get session context
+- GET /api/context/:sessionId/stats — session stats
+- DELETE /api/context/:sessionId — delete session context
+
+Examples
+
+Generate a response (POST):
+
+```powershell
+curl -X POST http://localhost:3000/api/ai \
+  -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Continúa la conversación anterior",
-    "sessionId": "mi_sesion_123",
+    "prompt": "Explain reinforcement learning in simple terms",
+    "sessionId": "session_123",
     "useContext": true
   }'
 ```
 
-### Obtener Estadísticas de Sesión
+Send a chat message:
 
-```bash
-curl http://localhost:3000/api/context/mi_sesion_123/stats
+```powershell
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello","sessionId":"user_1"}'
 ```
 
-## 🔒 Configuración de Seguridad
+Security & operational notes
 
-### Rate Limiting
+- Rate limiting defaults (configurable): general and specialized limits on AI routes.
+- Helmet is enabled with CSP and other secure headers.
+- CORS is configurable via environment variables.
+- Input validation migrated from `express-validator` to `celebrate` + `Joi` for clearer schemas and better integration.
+- The repository includes a pre-generated `public/swagger.json` to make static documentation available in serverless environments (Vercel, Netlify, etc.).
 
-- General: 100 requests por 15 minutos
-- IA: 10 requests por minuto
-- Contexto: 5 operaciones por minuto
+Environment variables
 
-### Headers de Seguridad
+Set these in `.env` or in your deployment environment:
 
-- Helmet activado con CSP configurado
-- CORS configurable
-- Compresión habilitada
+| VARIABLE | REQUIRED | DESCRIPTION | DEFAULT |
+|---|---:|---|---|
+| GEMINIKEY | yes | Google Gemini API key or equivalent | - |
+| PORT | no | Server port | 3000 |
+| NODE_ENV | no | Node environment | development |
+| MONGODB_URI | no | MongoDB connection string (if enabling persistence) | - |
+| RATE_LIMIT_WINDOW_MS | no | Rate limiting window (ms) | 900000 |
+| RATE_LIMIT_MAX_REQUESTS | no | Max requests per window | 100 |
+| MAX_CONTEXT_MESSAGES | no | Max messages per session | 100 |
+| TRUST_PROXY | no | Set to true if behind a proxy | false |
+| CORS_ORIGIN | no | Comma-separated list of allowed origins | * |
 
-### Validación
-
-- Validación de entrada en todos los endpoints
-- Sanitización de datos
-- Límites de longitud de mensajes
-
-## 🌐 Configuración para Proxy
-
-La API está configurada para funcionar detrás de proxies:
-
-```env
-TRUST_PROXY=true
-PROXY_COUNT=1
-```
-
-## 📊 Monitoreo
-
-### Health Check
-
-```bash
-curl http://localhost:3000/health
-```
-
-### Logs
-
-Los logs incluyen:
-- Requests HTTP (Morgan)
-- Errores del sistema
-- Información de inicialización
-
-## 🔧 Variables de Entorno
-
-| Variable | Requerida | Descripción | Valor por defecto |
-|----------|-----------|-------------|-------------------|
-| `GEMINIKEY` | ✅ | API Key de Google Gemini | - |
-| `PORT` | ❌ | Puerto del servidor | 3000 |
-| `NODE_ENV` | ❌ | Entorno de ejecución | development |
-| `RATE_LIMIT_WINDOW_MS` | ❌ | Ventana de rate limiting (ms) | 900000 |
-| `RATE_LIMIT_MAX_REQUESTS` | ❌ | Máximo requests por ventana | 100 |
-| `MAX_CONTEXT_MESSAGES` | ❌ | Máximo mensajes en contexto | 100 |
-| `TRUST_PROXY` | ❌ | Confiar en proxy | false |
-| `CORS_ORIGIN` | ❌ | Orígenes CORS permitidos | * |
-
-## 📁 Estructura del Proyecto
+Project structure
 
 ```
 gemini-rest-api/
+├── api/                      # Production entrypoint and server
+├── public/                   # Static assets, includes swagger.json
 ├── src/
-│   ├── config/
-│   │   ├── config.js
-│   │   └── swagger.js
-│   ├── middleware/
-│   │   ├── errorHandler.js
-│   │   ├── rateLimiter.js
-│   │   └── validators.js
-│   ├── routes/
-│   │   ├── index.js
-│   │   ├── ai.js
-│   │   ├── chat.js
-│   │   └── context.js
-│   ├── services/
-│   │   ├── contextService.js
-│   │   └── geminiService.js
-│   ├── scripts/
-│   │   └── init.js
-│   └── utils/
-│       └── helpers.js
-├── data/
-│   └── context.json
-├── index.js
+│   ├── config/              # config.js, swagger spec (static)
+│   ├── middleware/          # error handling, rate limiting, validators
+│   ├── routes/              # express routes (ai, chat, context)
+│   ├── services/            # business logic (gemini & context)
+│   └── scripts/             # init and swagger generation helpers
+├── data/                    # optional local json store
 ├── package.json
-├── .env.example
 └── README.md
 ```
 
-## 🚀 Despliegue
+Deployment
 
-### Vercel
+Vercel
 
-El proyecto incluye `vercel.json` configurado. Solo necesitas:
+1. Add environment variables in the Vercel dashboard (GEMINIKEY, MONGODB_URI, etc.)
+2. Deploy using Vercel CLI or GitHub integration. Static `public/swagger.json` will be served automatically.
 
-1. Configurar las variables de entorno en Vercel
-2. Deploy usando `vercel --prod`
-
-### Docker
+Docker
 
 ```dockerfile
 FROM node:18-alpine
@@ -227,53 +187,44 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-### PM2
+Local development
 
-```bash
-pm2 start index.js --name "gemini-api"
+```powershell
+npm run dev
 ```
 
-## 🐛 Depuración
+Testing & debugging
 
-1. **Verificar configuración**: `npm run init`
-2. **Logs detallados**: Establecer `NODE_ENV=development`
-3. **Health check**: Visitar `/health`
-4. **Documentación**: Visitar `/api-docs`
+- The project has no automated tests configured by default. Add unit/integration tests for critical services.
+- Use `NODE_ENV=development` for verbose logs (morgan) and easier debugging.
 
-## 📄 Licencia
+Changelog
 
-ISC
+### v1.5.0 (unreleased)
 
-## 👨‍💻 Autor
-
-**DANK1775**
-- GitHub: [@DANK1775](https://github.com/DANK1775)
-- Discord: dank.js
-
-## 🤝 Contributors
-
-**manalejandro**
-- GitHub: [@manalejandro](https://github.com/manalejandro)
-
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea tu feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📝 Changelog
+- Replaced dynamic Swagger generation with a static OpenAPI spec and included `public/swagger.json` to support serverless deployments.
+- Migrated request validation from `express-validator` to `celebrate` + `Joi` for clearer schemas and safer parsing.
+- Added celebrate error handler integration into the Express app to return well-formed validation errors.
+- Removed `swagger-jsdoc` and `express-validator` from dependencies; added `celebrate` and `joi`.
+- Updated `package-lock.json` and audited dependencies; `npm audit` reports no remaining vulnerabilities after the changes.
+- Updated `.gitignore` to allow committing `public/swagger.json` and `package-lock.json` for reproducible installs and serverless docs.
 
 ### v1.0.0
 
-- ✅ Contexto persistente con json-store
-- ✅ Seguridad mejorada con helmet y rate limiting
-- ✅ Validación robusta con express-validator
-- ✅ Documentación Swagger completa
-- ✅ Chat conversacional optimizado
-- ✅ Gestión avanzada de errores
-- ✅ Configuración para proxies
-- ✅ Scripts de inicialización
-- ✅ Endpoints de monitoreo
+- Initial feature set: optional context persistence, security middleware, Swagger docs, chat endpoints, rate limiting and error handling.
+
+Contributing
+
+1. Fork the project
+2. Create a feature branch: `git checkout -b feature/YourFeature`
+3. Commit your changes and push
+4. Open a pull request and describe the changes
+
+License
+
+ISC
+
+Author
+
+DANK1775 — https://github.com/DANK1775
+
